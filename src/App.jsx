@@ -54,11 +54,80 @@ Particle.prototype = {
   },
 };
 
+function Loader(x, y) {
+  this.x = x;
+  this.y = y;
+
+  this.r = 24;
+  this._progress = 0;
+
+  this.complete = false;
+}
+
+Loader.prototype = {
+  reset() {
+    this._progress = 0;
+    this.complete = false;
+  },
+  set progress(p) {
+    this._progress = p < 0 ? 0 : p > 1 ? 1 : p;
+    this.complete = this._progress === 1;
+  },
+  get progress() {
+    return this._progress;
+  },
+  draw(ctx) {
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, -HALF_PI, TWO_PI * this._progress - HALF_PI);
+    ctx.lineTo(this.x, this.y);
+    ctx.closePath();
+    ctx.fill();
+  },
+};
+
+function Exploader(x, y) {
+  this.x = x;
+  this.y = y;
+
+  this.startRadius = 24;
+
+  this.time = 0;
+  this.duration = 0.4;
+  this.progress = 0;
+
+  this.complete = false;
+}
+
+Exploader.prototype = {
+  reset() {
+    this.time = 0;
+    this.progress = 0;
+    this.complete = false;
+  },
+  update(timeStep) {
+    this.time = Math.min(this.duration, this.time + timeStep);
+    this.progress = Ease.inBack(this.time, 0, 1, this.duration);
+
+    this.complete = this.time === this.duration;
+  },
+  draw(ctx) {
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.startRadius * (1 - this.progress), 0, TWO_PI);
+    ctx.fill();
+  },
+};
+
 const Ease = {
-  outCubic: function (t, b, c, d) {
+  outCubic(t, b, c, d) {
     t /= d;
     t--;
     return c * (t * t * t + 1) + b;
+  },
+  inBack(t, b, c, d, s) {
+    s = s || 1.70158;
+    return c * (t /= d) * t * ((s + 1) * t - s) + b;
   },
 };
 
@@ -76,66 +145,103 @@ function App() {
   let canvas;
   let ctx;
   let particles = [];
-  const [phase, setPhase] = createSignal(0);
+  let loader;
+  let exploader;
   const timeStep = 1 / 60;
+  let phase = 0;
+
+  function resizeCanvas() {
+    const viewWidth = window.innerWidth;
+    const viewHeight = window.innerHeight;
+    canvas.width = viewWidth;
+    canvas.height = viewHeight;
+  }
+
+  function createLoader() {
+    loader = new Loader(window.innerWidth * 0.5, window.innerHeight * 0.5);
+  }
+
+  function createExploader() {
+    exploader = new Exploader(window.innerWidth * 0.5, window.innerHeight * 0.5);
+  }
 
   function createParticles() {
     for (let i = 0; i < 128; i++) {
-      const p0 = new Point(256, 175);
-      const p1 = new Point(Math.random() * 512, Math.random() * 350);
-      const p2 = new Point(Math.random() * 512, Math.random() * 350);
-      const p3 = new Point(Math.random() * 512, 350 + 64);
+      const p0 = new Point(window.innerWidth * 0.5, window.innerHeight * 0.5);
+      const p1 = new Point(Math.random() * window.innerWidth, Math.random() * window.innerHeight);
+      const p2 = new Point(Math.random() * window.innerWidth, Math.random() * window.innerHeight);
+      const p3 = new Point(Math.random() * window.innerWidth, window.innerHeight + 64);
 
       particles.push(new Particle(p0, p1, p2, p3));
     }
   }
 
   function update() {
-    if (phase() === 0) {
-      setPhase(1);
-    } else if (phase() === 1) {
-      particles.forEach((p) => p.update(timeStep));
-      if (particles.every((p) => p.complete)) {
-        setPhase(2);
-      }
+    switch (phase) {
+      case 0:
+        loader.progress += 1 / 45;
+        break;
+      case 1:
+        exploader.update(timeStep);
+        break;
+      case 2:
+        particles.forEach((p) => p.update(timeStep));
+        break;
     }
   }
 
   function draw() {
-    ctx.clearRect(0, 0, 512, 350);
-    if (phase() === 1) {
-      particles.forEach((p) => p.draw(ctx));
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    switch (phase) {
+      case 0:
+        loader.draw(ctx);
+        break;
+      case 1:
+        exploader.draw(ctx);
+        break;
+      case 2:
+        particles.forEach((p) => p.draw(ctx));
+        break;
     }
   }
 
-  function resetAnimation() {
-    setPhase(0);
-    particles = [];
-    createParticles();
+  function checkParticlesComplete() {
+    return particles.every((p) => p.complete);
   }
 
   function loop() {
     update();
     draw();
-    if (phase() === 2) {
-      setTimeout(resetAnimation, 2000); // 2 second delay before resetting
-    } else {
-      requestAnimationFrame(loop);
+
+    if (phase === 0 && loader.complete) {
+      phase = 1;
+    } else if (phase === 1 && exploader.complete) {
+      phase = 2;
+    } else if (phase === 2 && checkParticlesComplete()) {
+      exploader.reset();
+      particles.length = 0;
+      createParticles();
     }
+
+    requestAnimationFrame(loop);
   }
 
   onMount(() => {
     ctx = canvas.getContext("2d");
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    createLoader();
+    createExploader();
     createParticles();
     loop();
   });
 
-  return (
-    <div id="container">
-      <h1>Beautiful SolidJS Animation</h1>
-      <canvas id="drawing_canvas" ref={canvas} width="512" height="350"></canvas>
-    </div>
-  );
+  onCleanup(() => {
+    window.removeEventListener("resize", resizeCanvas);
+  });
+
+  return <canvas id="drawing_canvas" ref={canvas}></canvas>;
 }
 
 export default App;
