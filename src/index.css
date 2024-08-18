@@ -1,0 +1,21 @@
+body {
+  background-color: #1e1e1e;
+  margin: 0;
+  overflow: hidden;
+  font-family: 'Arial', sans-serif;
+}
+
+h1 {
+  text-align: center;
+  color: #00ff99;
+  margin-top: 20px;
+  font-size: 2em;
+}
+
+#drawing_canvas {
+  display: block;
+  margin: 20px auto;
+  background-color: #2b2b2b;
+  border: 2px solid #00ff99;
+  border-radius: 8px;
+}

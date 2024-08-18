@@ -1,0 +1,33 @@
+body {
+  background-color: #1a1a1a;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #00ffcc;
+}
+
+h1 {
+  text-align: center;
+  color: #00ffcc;
+  margin-bottom: 20px;
+  font-size: 2.5em;
+  text-shadow: 0px 0px 10px #00ffcc;
+}
+
+#container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#drawing_canvas {
+  background-color: #333;
+  border: 4px solid #00ffcc;
+  border-radius: 12px;
+  box-shadow: 0px 0px 20px rgba(0, 255, 204, 0.5);
+}
