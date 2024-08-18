@@ -25,5 +25,5 @@ liara deploy --platform static
 ```
 
 # Need More Info?
-- [Liara](https://docs.liara.ir/paas/nodejs/related-apps/solidjs)
+- [Liara](https://docs.liara.ir/paas/static/related-apps/solidjs)
 - [SolidJS](https://docs.solidjs.com/)
